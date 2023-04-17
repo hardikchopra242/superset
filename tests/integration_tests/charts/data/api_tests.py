@@ -1132,6 +1132,14 @@ def test_custom_cache_timeout(test_client, login_as_admin, physical_query_contex
     assert rv.json["result"][0]["cache_timeout"] == 5678
 
 
+def test_force_cache_timeout(test_client, login_as_admin, physical_query_context):
+    physical_query_context["custom_cache_timeout"] = -1
+    test_client.post(CHART_DATA_URI, json=physical_query_context)
+    rv = test_client.post(CHART_DATA_URI, json=physical_query_context)
+    assert rv.json["result"][0]["cached_dttm"] is None
+    assert rv.json["result"][0]["is_cached"] is None
+
+
 @mock.patch(
     "superset.common.query_context_processor.config",
     {
@@ -1234,8 +1242,8 @@ def test_chart_cache_timeout_chart_not_found(
     [
         (200, {"where": "1 = 1"}),
         (200, {"having": "count(*) > 0"}),
-        (400, {"where": "col1 in (select distinct col1 from physical_dataset)"}),
-        (400, {"having": "count(*) > (select count(*) from physical_dataset)"}),
+        (403, {"where": "col1 in (select distinct col1 from physical_dataset)"}),
+        (403, {"having": "count(*) > (select count(*) from physical_dataset)"}),
     ],
 )
 @with_feature_flags(ALLOW_ADHOC_SUBQUERY=False)

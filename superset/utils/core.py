@@ -126,6 +126,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from superset.connectors.base.models import BaseColumn, BaseDatasource
+    from superset.models.sql_lab import Query
 
 logging.getLogger("MARKDOWN").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1711,7 +1712,7 @@ def get_column_names_from_metrics(metrics: List[Metric]) -> List[str]:
 
 def extract_dataframe_dtypes(
     df: pd.DataFrame,
-    datasource: Optional["BaseDatasource"] = None,
+    datasource: Optional[Union[BaseDatasource, Query]] = None,
 ) -> List[GenericDataType]:
     """Serialize pandas/numpy dtypes to generic types"""
 
@@ -1785,15 +1786,9 @@ def get_time_filter_status(
     datasource: "BaseDatasource",
     applied_time_extras: Dict[str, str],
 ) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:
-    temporal_columns: Set[Any]
-    if datasource.type == "query":
-        temporal_columns = {
-            col.get("column_name") for col in datasource.columns if col.get("is_dttm")
-        }
-    else:
-        temporal_columns = {
-            col.column_name for col in datasource.columns if col.is_dttm
-        }
+    temporal_columns: Set[Any] = {
+        col.column_name for col in datasource.columns if col.is_dttm
+    }
     applied: List[Dict[str, str]] = []
     rejected: List[Dict[str, str]] = []
     time_column = applied_time_extras.get(ExtraFiltersTimeColumnType.TIME_COL)
